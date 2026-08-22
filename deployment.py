@@ -165,6 +165,12 @@ def translate_to_genz(caption):
 # Streamlit UI
 st.title("Image to GenZ Caption Generator ⚡️")
 
+# Initialize session state variables
+if "generated_caption" not in st.session_state:
+    st.session_state.generated_caption = ""
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 mode = st.radio("Choose Mode", ["GenZ VLM API (Online / Accurate)", "Local Model (Offline / Flickr8k)"])
 
 if mode == "GenZ VLM API (Online / Accurate)":
@@ -191,11 +197,13 @@ if mode == "GenZ VLM API (Online / Accurate)":
                         "'giving', 'doing side quests', 'npc', etc. Keep it short, punchy, and include 1-2 relevant emojis."
                     )
                     response = client.models.generate_content(
-                        model='gemini-3.6-flash',
+                        model='gemini-2.5-flash',
                         contents=[prompt, image]
                     )
+                    st.session_state.generated_caption = response.text.strip()
+                    st.session_state.history.append(st.session_state.generated_caption)
                     st.success("Here is your caption:")
-                    st.subheader(response.text.strip())
+                    st.subheader(st.session_state.generated_caption)
                 except Exception as e:
                     st.error(f"Error calling Gemini API: {str(e)}")
                     # Diagnostic helper
@@ -219,7 +227,9 @@ else:
                 img_array = img_to_array(image_resized)
                 raw_caption = gen_caption_image(img_array, vgg_model, model, tokenizer, max_length)
                 genz_caption = translate_to_genz(raw_caption)
+                st.session_state.generated_caption = genz_caption
+                st.session_state.history.append(st.session_state.generated_caption)
                 st.success("Here is your caption:")
-                st.subheader(genz_caption)
+                st.subheader(st.session_state.generated_caption)
             except Exception as e:
                 st.error(f"Failed to load or execute local model: {str(e)}")
