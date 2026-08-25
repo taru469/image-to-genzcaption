@@ -149,18 +149,58 @@ def gen_caption_image(img, vgg_model, model, tokenizer, max_length):
     y_pred = predict_caption(model, feature, tokenizer, max_length)
     return y_pred
 
-def translate_to_genz(caption):
+def translate_to_genz(caption, intensity="Standard (Medium)"):
+    import string
     words = caption.replace("start", "").replace("end", "").strip().split()
     translated_words = []
-    for word in words:
-        cleaned = word.lower().strip()
-        if cleaned in SLANG_MAP:
-            translated_words.append(SLANG_MAP[cleaned])
-        else:
-            translated_words.append(word)
     
-    suffix = random.choice(SUFFIXES)
-    return " ".join(translated_words) + " " + suffix
+    chill_suffixes = ["", "fr 💯", "vibes ✨", "chilling 🌊"]
+    standard_suffixes = SUFFIXES
+    high_suffixes = SUFFIXES + [
+        "absolute skibidi rizzler vibes fr 🥶",
+        "cooked beyond belief 💀",
+        "doing side quests at 3am 🗣️",
+        "aura points +9999 📈"
+    ]
+    
+    for word in words:
+        left_punct = ""
+        right_punct = ""
+        
+        while word and word[0] in string.punctuation:
+            left_punct += word[0]
+            word = word[1:]
+            
+        while word and word[-1] in string.punctuation:
+            right_punct = word[-1] + right_punct
+            word = word[:-1]
+            
+        cleaned = word.lower().strip()
+        translated = word
+        if cleaned in SLANG_MAP:
+            if intensity == "Chill (Low)":
+                if random.random() < 0.5:
+                    translated = SLANG_MAP[cleaned]
+            else:
+                translated = SLANG_MAP[cleaned]
+                
+        final_word = left_punct + translated + right_punct
+        translated_words.append(final_word)
+        
+        if intensity == "Max Aura (High)" and random.random() < 0.15:
+            translated_words.append(random.choice(["literally", "fr fr", "no cap", "bruh"]))
+            
+    if intensity == "Chill (Low)":
+        suffix = random.choice(chill_suffixes)
+    elif intensity == "Max Aura (High)":
+        suffix = random.choice(high_suffixes)
+    else:
+        suffix = random.choice(standard_suffixes)
+        
+    result = " ".join(translated_words)
+    if suffix:
+        result += " " + suffix
+    return result
 
 # Streamlit UI
 st.title("Image to GenZ Caption Generator ⚡️")
@@ -172,6 +212,7 @@ if "history" not in st.session_state:
     st.session_state.history = []
 
 mode = st.radio("Choose Mode", ["GenZ VLM API (Online / Accurate)", "Local Model (Offline / Flickr8k)"])
+intensity = st.select_slider("Select Slang Intensity", options=["Chill (Low)", "Standard (Medium)", "Max Aura (High)"], value="Standard (Medium)")
 
 if mode == "GenZ VLM API (Online / Accurate)":
     if not HAS_GEMINI:
@@ -226,7 +267,7 @@ else:
                 image_resized = ImageOps.fit(image, (224, 224), Image.LANCZOS)
                 img_array = img_to_array(image_resized)
                 raw_caption = gen_caption_image(img_array, vgg_model, model, tokenizer, max_length)
-                genz_caption = translate_to_genz(raw_caption)
+                genz_caption = translate_to_genz(raw_caption, intensity=intensity)
                 st.session_state.generated_caption = genz_caption
                 st.session_state.history.append(st.session_state.generated_caption)
                 st.success("Here is your caption:")
