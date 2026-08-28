@@ -232,10 +232,33 @@ if mode == "GenZ VLM API (Online / Accurate)":
             with st.spinner("Letting the AI cook... 🍳"):
                 try:
                     client = genai.Client(api_key=api_key)
+                    if intensity == "Chill (Low)":
+                        prompt_guidelines = (
+                            "Write a subtle, natural, laid-back caption with very light, natural Gen Z slang. "
+                            "Avoid over-the-top slang words. Keep it chill and clean. Use 0 or 1 emoji. "
+                            "Example caption style: 'just chilling on the beach today, immaculate vibes.'"
+                        )
+                    elif intensity == "Max Aura (High)":
+                        prompt_guidelines = (
+                            "Write a heavy, high-energy, brainrot-infused Gen Z slang caption. "
+                            "Go completely all-out with intense slang terms. Use popular words like 'rizzler', 'skibidi', "
+                            "'gyatt', 'aura points', 'cooked', 'sus', 'let him cook', 'main character energy', 'fr fr', 'no cap'. "
+                            "Make it extremely funny, punchy, and use 2-3 emojis. "
+                            "Example caption style: 'bro is speedrunning life with +9999 aura points, absolute rizzler fr fr 💀🔥'"
+                        )
+                    else:  # Standard (Medium)
+                        prompt_guidelines = (
+                            "Write a fun, punchy caption using classic Gen Z slang. "
+                            "Use popular terms like 'no cap', 'fr fr', 'vibes', 'rizz', 'aura', 'slay', 'giving', 'doing side quests', 'npc'. "
+                            "Balance the slang naturally so it is engaging but readable. Include 1-2 relevant emojis. "
+                            "Example caption style: 'lil bro is out here living their best life, no cap 🧢✨'"
+                        )
+
                     prompt = (
-                        "Analyze this image and write a caption in modern Gen Z slang. "
-                        "Use popular terms like 'no cap', 'fr fr', 'cooked', 'vibes', 'rizz', 'aura', 'slay', "
-                        "'giving', 'doing side quests', 'npc', etc. Keep it short, punchy, and include 1-2 relevant emojis."
+                        f"You are a modern Gen Z content creator. Analyze the provided image and generate an appropriate caption.\n"
+                        f"Formatting & Tone Guidelines:\n"
+                        f"{prompt_guidelines}\n"
+                        f"Make sure to output ONLY the final caption text. Do not add any conversational responses, prefixes, or tags."
                     )
                     response = client.models.generate_content(
                         model='gemini-2.5-flash',
