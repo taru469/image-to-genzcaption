@@ -173,7 +173,7 @@ if mode == "GenZ VLM API (Online / Accurate)":
 else:
     img = st.file_uploader("Upload your Image")
     if img and st.button("Generate GenZ Caption"):
-        image = Image.open(img)
+        image = Image.open(img).convert('RGB')
         st.image(image, caption="Uploaded Image")
         with st.spinner("Running offline model..."):
             try:
