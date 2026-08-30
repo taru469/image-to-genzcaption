@@ -20,10 +20,22 @@ Image to GenZ Caption Generator is a deep learning & visual LLM application that
 
 ## Installation
 
+### Prerequisites
+This project uses **Git LFS (Large File Storage)** to manage large model files (`Image_Caption_Generator.h5` and `features.pickle`). Before cloning the repository, please make sure you have Git LFS installed:
+- **macOS**: `brew install git-lfs`
+- **Windows / Linux**: Download from [git-lfs.github.com](https://git-lfs.github.com/)
+
+Once installed, run:
+```bash
+git lfs install
+```
+
+### Steps
+
 1. Clone the repository and navigate into the folder:
    ```bash
-   git clone <your-repo-link>
-   cd IMG2TEXT
+   git clone https://github.com/taru469/Image-to-GenZCaption.git
+   cd Image-to-GenZCaption
    ```
 
 2. Install the requirements:
