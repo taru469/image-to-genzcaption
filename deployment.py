@@ -162,6 +162,13 @@ if mode == "GenZ VLM API (Online / Accurate)":
                     st.subheader(response.text.strip())
                 except Exception as e:
                     st.error(f"Error calling Gemini API: {str(e)}")
+                    # Diagnostic helper
+                    try:
+                        client_diag = genai.Client(api_key=api_key)
+                        models = [m.name for m in client_diag.models.list()]
+                        st.info(f"Available models for your API Key: {', '.join(models)}")
+                    except Exception as diag_err:
+                        st.warning(f"Could not list available models: {str(diag_err)}")
 
 else:
     img = st.file_uploader("Upload your Image")
