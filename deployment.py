@@ -69,14 +69,14 @@ def load_local_models():
                 "Please install Git LFS (git-lfs) and run `git lfs pull` to download the actual model assets."
             )
 
-    # Lazy-load TensorFlow to speed up startup time when running VLM mode
-    import tensorflow as tf
-    from tensorflow.keras.applications.vgg16 import VGG16
-    from tensorflow.keras.models import Model
+    # Lazy-load tf_keras for compatibility with Keras 2 models in a Keras 3 environment
+    import tf_keras as tfk
+    from tf_keras.applications.vgg16 import VGG16
+    from tf_keras.models import Model
 
     vgg_model = VGG16()
     vgg_model = Model(inputs=vgg_model.inputs, outputs=vgg_model.layers[-2].output)
-    model = tf.keras.models.load_model("Image_Caption_Generator.h5")
+    model = tfk.models.load_model("Image_Caption_Generator.h5")
     
     with open("tokenizer.pickle", "rb") as f:
         tokenizer = pickle.load(f)
@@ -90,7 +90,7 @@ def ind_to_word(index, tokenizer):
     return None
 
 def predict_caption(model, image, tokenizer, max_length):
-    from tensorflow.keras.preprocessing.sequence import pad_sequences
+    from tf_keras.preprocessing.sequence import pad_sequences
     capt = 'start'
     for i in range(max_length):
         seq = tokenizer.texts_to_sequences([capt])[0]
@@ -106,7 +106,7 @@ def predict_caption(model, image, tokenizer, max_length):
     return capt
 
 def gen_caption_image(img, vgg_model, model, tokenizer, max_length):   
-    from tensorflow.keras.applications.vgg16 import preprocess_input
+    from tf_keras.applications.vgg16 import preprocess_input
     img = img.reshape((1, img.shape[0], img.shape[1], img.shape[2]))
     img = preprocess_input(img)
     feature = vgg_model.predict(img, verbose=0)
@@ -177,7 +177,7 @@ else:
         st.image(image, caption="Uploaded Image")
         with st.spinner("Running offline model..."):
             try:
-                from tensorflow.keras.preprocessing.image import img_to_array
+                from tf_keras.preprocessing.image import img_to_array
                 vgg_model, model, tokenizer = load_local_models()
                 image_resized = ImageOps.fit(image, (224, 224), Image.LANCZOS)
                 img_array = img_to_array(image_resized)
