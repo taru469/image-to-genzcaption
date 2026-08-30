@@ -95,7 +95,7 @@ def predict_caption(model, image, tokenizer, max_length):
     for i in range(max_length):
         seq = tokenizer.texts_to_sequences([capt])[0]
         seq = pad_sequences([seq], maxlen=max_length)
-        y_hat = model.predict([image, seq], verbose=0)
+        y_hat = model([image, seq], training=False)
         y_hat = np.argmax(y_hat)
         word = ind_to_word(y_hat, tokenizer)
         if word is None:
@@ -109,7 +109,7 @@ def gen_caption_image(img, vgg_model, model, tokenizer, max_length):
     from tf_keras.applications.vgg16 import preprocess_input
     img = img.reshape((1, img.shape[0], img.shape[1], img.shape[2]))
     img = preprocess_input(img)
-    feature = vgg_model.predict(img, verbose=0)
+    feature = vgg_model(img, training=False)
     y_pred = predict_caption(model, feature, tokenizer, max_length)
     return y_pred
 
