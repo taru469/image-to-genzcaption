@@ -7,7 +7,7 @@ import random
 
 # Optional import for Gemini GenAI SDK
 try:
-    import google.generativeai as genai
+    from google import genai
     HAS_GEMINI = True
 except ImportError:
     HAS_GEMINI = False
@@ -133,7 +133,7 @@ mode = st.radio("Choose Mode", ["GenZ VLM API (Online / Accurate)", "Local Model
 
 if mode == "GenZ VLM API (Online / Accurate)":
     if not HAS_GEMINI:
-        st.error("Please install the Google Generative AI library: `pip install google-generativeai`")
+        st.error("Please install the Google GenAI library: `pip install google-genai`")
     
     api_key_input = st.text_input("Enter Gemini API Key (or set GEMINI_API_KEY env variable)", type="password")
     api_key = api_key_input or os.environ.get("GEMINI_API_KEY")
@@ -148,14 +148,16 @@ if mode == "GenZ VLM API (Online / Accurate)":
             st.image(image, caption="Uploaded Image")
             with st.spinner("Letting the AI cook... 🍳"):
                 try:
-                    genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    client = genai.Client(api_key=api_key)
                     prompt = (
                         "Analyze this image and write a caption in modern Gen Z slang. "
                         "Use popular terms like 'no cap', 'fr fr', 'cooked', 'vibes', 'rizz', 'aura', 'slay', "
                         "'giving', 'doing side quests', 'npc', etc. Keep it short, punchy, and include 1-2 relevant emojis."
                     )
-                    response = model.generate_content([prompt, image])
+                    response = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=[prompt, image]
+                    )
                     st.success("Here is your caption:")
                     st.subheader(response.text.strip())
                 except Exception as e:
