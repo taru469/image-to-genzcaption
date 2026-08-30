@@ -59,17 +59,53 @@ SUFFIXES = [
     "we are so back 🗣️"
 ]
 
+def download_lfs_files():
+    import urllib.request
+    import json
+    
+    st.info("Downloading local model weights and features (approx. 200MB)... Please wait 1-2 minutes. ⏳")
+    url = "https://github.com/SanKolisetty/Image-to-Caption-Generator.git/info/lfs/objects/batch"
+    headers = {
+        "Accept": "application/vnd.git-lfs+json",
+        "Content-Type": "application/vnd.git-lfs+json",
+    }
+    payload = {
+        "operation": "download",
+        "transfers": ["basic"],
+        "objects": [
+            {"oid": "704c870a8c4ce540100a1559b3320a5126377d8182b5c37b6920e693b78c12c5", "size": 70898676},
+            {"oid": "488071137b3ab5994d8b749db2c01031d4ccc61eb4888bc8afe2f35b43cae0f3", "size": 133064982}
+        ]
+    }
+    
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req) as response:
+            res = json.loads(response.read().decode('utf-8'))
+            for obj in res.get("objects", []):
+                oid = obj.get("oid")
+                download_url = obj.get("actions", {}).get("download", {}).get("href")
+                filename = "Image_Caption_Generator.h5" if oid.startswith("704c") else "features.pickle"
+                if not os.path.exists(filename) or os.path.getsize(filename) < 1000:
+                    urllib.request.urlretrieve(download_url, filename)
+    except Exception as e:
+        raise RuntimeError(f"Failed to auto-download model files: {str(e)}")
+
 @st.cache_resource
 def load_local_models():
-    # Verify file sizes to prevent loading Git LFS pointer files
-    for filename in ["Image_Caption_Generator.h5", "tokenizer.pickle"]:
-        if os.path.exists(filename) and os.path.getsize(filename) < 1000:
-            raise ValueError(
-                f"The file '{filename}' appears to be a Git LFS pointer rather than the actual asset. "
-                "Please install Git LFS (git-lfs) and run `git lfs pull` to download the actual model assets."
-            )
+    # If tokenizer is missing, download it
+    if not os.path.exists("tokenizer.pickle") or os.path.getsize("tokenizer.pickle") < 1000:
+        url = "https://raw.githubusercontent.com/SanKolisetty/Image-to-Caption-Generator/main/tokenizer.pickle"
+        import urllib.request
+        urllib.request.urlretrieve(url, "tokenizer.pickle")
 
-    # Lazy-load tf_keras for compatibility with Keras 2 models in a Keras 3 environment
+    # If model weights are missing or are pointer files, download them
+    for filename in ["Image_Caption_Generator.h5", "features.pickle"]:
+        if not os.path.exists(filename) or os.path.getsize(filename) < 1000:
+            download_lfs_files()
+            break
+
+    # Lazy-load tf_keras for compatibility
     import tf_keras as tfk
     from tf_keras.applications.vgg16 import VGG16
     from tf_keras.models import Model

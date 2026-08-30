@@ -22,3 +22,8 @@ ENV/
 # IDE configurations
 .vscode/
 .idea/
+
+# Local binary cache
+Image_Caption_Generator.h5
+features.pickle
+tokenizer.pickle
