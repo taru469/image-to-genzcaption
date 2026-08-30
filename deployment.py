@@ -155,7 +155,7 @@ if mode == "GenZ VLM API (Online / Accurate)":
                         "'giving', 'doing side quests', 'npc', etc. Keep it short, punchy, and include 1-2 relevant emojis."
                     )
                     response = client.models.generate_content(
-                        model='gemini-2.5-flash',
+                        model='gemini-3.6-flash',
                         contents=[prompt, image]
                     )
                     st.success("Here is your caption:")
