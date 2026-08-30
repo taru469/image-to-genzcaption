@@ -1,3 +1,24 @@
-.ipynb_checkpoints/
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pickle
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# macOS system files
+.DS_Store
+
+# IDE configurations
+.vscode/
+.idea/
