@@ -233,7 +233,7 @@ else:
     st.sidebar.info("No generated captions yet.")
 
 # Main area title and description
-st.markdown("<h1 style='text-align: center;'>Image to GenZ Caption Generator ⚡️</h1>", unsafe_html=True)
+st.markdown("<h1 style='text-align: center;'>Image to GenZ Caption Generator ⚡️</h1>", unsafe_allow_html=True)
 st.write("Upload your image below and let the model cook up the perfect Gen Z slang caption for your social media posts.")
 
 # Configuration input for online API mode in the main screen
