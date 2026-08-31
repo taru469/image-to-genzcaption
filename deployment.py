@@ -149,77 +149,190 @@ def gen_caption_image(img, vgg_model, model, tokenizer, max_length):
     y_pred = predict_caption(model, feature, tokenizer, max_length)
     return y_pred
 
-def translate_to_genz(caption):
+def translate_to_genz(caption, intensity="Standard (Medium)"):
+    import string
     words = caption.replace("start", "").replace("end", "").strip().split()
     translated_words = []
-    for word in words:
-        cleaned = word.lower().strip()
-        if cleaned in SLANG_MAP:
-            translated_words.append(SLANG_MAP[cleaned])
-        else:
-            translated_words.append(word)
     
-    suffix = random.choice(SUFFIXES)
-    return " ".join(translated_words) + " " + suffix
+    chill_suffixes = ["", "fr 💯", "vibes ✨", "chilling 🌊"]
+    standard_suffixes = SUFFIXES
+    high_suffixes = SUFFIXES + [
+        "absolute skibidi rizzler vibes fr 🥶",
+        "cooked beyond belief 💀",
+        "doing side quests at 3am 🗣️",
+        "aura points +9999 📈"
+    ]
+    
+    for word in words:
+        left_punct = ""
+        right_punct = ""
+        
+        while word and word[0] in string.punctuation:
+            left_punct += word[0]
+            word = word[1:]
+            
+        while word and word[-1] in string.punctuation:
+            right_punct = word[-1] + right_punct
+            word = word[:-1]
+            
+        cleaned = word.lower().strip()
+        translated = word
+        if cleaned in SLANG_MAP:
+            if intensity == "Chill (Low)":
+                if random.random() < 0.5:
+                    translated = SLANG_MAP[cleaned]
+            else:
+                translated = SLANG_MAP[cleaned]
+                
+        final_word = left_punct + translated + right_punct
+        translated_words.append(final_word)
+        
+        if intensity == "Max Aura (High)" and random.random() < 0.15:
+            translated_words.append(random.choice(["literally", "fr fr", "no cap", "bruh"]))
+            
+    if intensity == "Chill (Low)":
+        suffix = random.choice(chill_suffixes)
+    elif intensity == "Max Aura (High)":
+        suffix = random.choice(high_suffixes)
+    else:
+        suffix = random.choice(standard_suffixes)
+        
+    result = " ".join(translated_words)
+    if suffix:
+        result += " " + suffix
+    return result
 
 # Streamlit UI
 st.title("Image to GenZ Caption Generator ⚡️")
 
-mode = st.radio("Choose Mode", ["GenZ VLM API (Online / Accurate)", "Local Model (Offline / Flickr8k)"])
+# Initialize session state variables
+if "generated_caption" not in st.session_state:
+    st.session_state.generated_caption = ""
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "active_image" not in st.session_state:
+    st.session_state.active_image = None
+if "last_file_key" not in st.session_state:
+    st.session_state.last_file_key = ""
 
+# Sidebar settings and history
+st.sidebar.header("Settings ⚙️")
+mode = st.sidebar.radio("Choose Mode", ["GenZ VLM API (Online / Accurate)", "Local Model (Offline / Flickr8k)"])
+intensity = st.sidebar.select_slider("Select Slang Intensity", options=["Chill (Low)", "Standard (Medium)", "Max Aura (High)"], value="Standard (Medium)")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Recent Captions 📜")
+if st.session_state.history:
+    for idx, hist_caption in enumerate(reversed(st.session_state.history)):
+        st.sidebar.text_area(f"#{len(st.session_state.history) - idx}", value=hist_caption, height=80, key=f"hist_{idx}", disabled=True)
+    if st.sidebar.button("Clear History"):
+        st.session_state.history = []
+        st.session_state.generated_caption = ""
+        st.rerun()
+else:
+    st.sidebar.info("No generated captions yet.")
+
+# Main area title and description
+st.markdown("<h1 style='text-align: center;'>Image to GenZ Caption Generator ⚡️</h1>", unsafe_html=True)
+st.write("Upload your image below and let the model cook up the perfect Gen Z slang caption for your social media posts.")
+
+# Configuration input for online API mode in the main screen
+api_key = None
 if mode == "GenZ VLM API (Online / Accurate)":
     if not HAS_GEMINI:
         st.error("Please install the Google GenAI library: `pip install google-genai`")
-    
     api_key_input = st.text_input("Enter Gemini API Key (or set GEMINI_API_KEY env variable)", type="password")
     api_key = api_key_input or os.environ.get("GEMINI_API_KEY")
-    
-    img = st.file_uploader("Upload your Image")
-    
-    if img and st.button("Generate GenZ Caption"):
-        if not api_key:
-            st.warning("Please provide a Gemini API Key to run in Online Mode.")
-        else:
-            image = Image.open(img)
-            st.image(image, caption="Uploaded Image")
-            with st.spinner("Letting the AI cook... 🍳"):
-                try:
-                    client = genai.Client(api_key=api_key)
-                    prompt = (
-                        "Analyze this image and write a caption in modern Gen Z slang. "
-                        "Use popular terms like 'no cap', 'fr fr', 'cooked', 'vibes', 'rizz', 'aura', 'slay', "
-                        "'giving', 'doing side quests', 'npc', etc. Keep it short, punchy, and include 1-2 relevant emojis."
-                    )
-                    response = client.models.generate_content(
-                        model='gemini-3.6-flash',
-                        contents=[prompt, image]
-                    )
-                    st.success("Here is your caption:")
-                    st.subheader(response.text.strip())
-                except Exception as e:
-                    st.error(f"Error calling Gemini API: {str(e)}")
-                    # Diagnostic helper
-                    try:
-                        client_diag = genai.Client(api_key=api_key)
-                        models = [m.name for m in client_diag.models.list()]
-                        st.info(f"Available models for your API Key: {', '.join(models)}")
-                    except Exception as diag_err:
-                        st.warning(f"Could not list available models: {str(diag_err)}")
 
-else:
-    img = st.file_uploader("Upload your Image")
-    if img and st.button("Generate GenZ Caption"):
-        image = Image.open(img).convert('RGB')
-        st.image(image, caption="Uploaded Image")
-        with st.spinner("Running offline model..."):
-            try:
-                from tf_keras.preprocessing.image import img_to_array
-                vgg_model, model, tokenizer = load_local_models()
-                image_resized = ImageOps.fit(image, (224, 224), Image.LANCZOS)
-                img_array = img_to_array(image_resized)
-                raw_caption = gen_caption_image(img_array, vgg_model, model, tokenizer, max_length)
-                genz_caption = translate_to_genz(raw_caption)
-                st.success("Here is your caption:")
-                st.subheader(genz_caption)
-            except Exception as e:
-                st.error(f"Failed to load or execute local model: {str(e)}")
+# File uploader
+img_file = st.file_uploader("Upload your Image", type=["png", "jpg", "jpeg", "webp"])
+
+if img_file is not None:
+    file_key = f"{img_file.name}_{img_file.size}"
+    if st.session_state.last_file_key != file_key:
+        st.session_state.last_file_key = file_key
+        st.session_state.active_image = Image.open(img_file).convert("RGB")
+        st.session_state.generated_caption = ""
+
+if st.session_state.active_image is not None:
+    st.markdown("---")
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("Selected Image 🖼️")
+        st.image(st.session_state.active_image, use_container_width=True)
+        generate_btn = st.button("Generate GenZ Caption 🔥", use_container_width=True)
+        
+    with col2:
+        st.subheader("Your Generated Caption ✨")
+        
+        if generate_btn:
+            with st.spinner("Cooking the caption... 🍳"):
+                if mode == "GenZ VLM API (Online / Accurate)":
+                    if not api_key:
+                        st.warning("Please provide a Gemini API Key to run in Online Mode.")
+                    else:
+                        try:
+                            client = genai.Client(api_key=api_key)
+                            if intensity == "Chill (Low)":
+                                prompt_guidelines = (
+                                    "Write a subtle, natural, laid-back caption with very light, natural Gen Z slang. "
+                                    "Avoid over-the-top slang words. Keep it chill and clean. Use 0 or 1 emoji. "
+                                    "Example caption style: 'just chilling on the beach today, immaculate vibes.'"
+                                )
+                            elif intensity == "Max Aura (High)":
+                                prompt_guidelines = (
+                                    "Write a heavy, high-energy, brainrot-infused Gen Z slang caption. "
+                                    "Go completely all-out with intense slang terms. Use popular words like 'rizzler', 'skibidi', "
+                                    "'gyatt', 'aura points', 'cooked', 'sus', 'let him cook', 'main character energy', 'fr fr', 'no cap'. "
+                                    "Make it extremely funny, punchy, and use 2-3 emojis. "
+                                    "Example caption style: 'bro is speedrunning life with +9999 aura points, absolute rizzler fr fr 💀🔥'"
+                                )
+                            else:  # Standard (Medium)
+                                prompt_guidelines = (
+                                    "Write a fun, punchy caption using classic Gen Z slang. "
+                                    "Use popular terms like 'no cap', 'fr fr', 'vibes', 'rizz', 'aura', 'slay', 'giving', 'doing side quests', 'npc'. "
+                                    "Balance the slang naturally so it is engaging but readable. Include 1-2 relevant emojis. "
+                                    "Example caption style: 'lil bro is out here living their best life, no cap 🧢✨'"
+                                )
+
+                            prompt = (
+                                f"You are a modern Gen Z content creator. Analyze the provided image and generate an appropriate caption.\n"
+                                f"Formatting & Tone Guidelines:\n"
+                                f"{prompt_guidelines}\n"
+                                f"Make sure to output ONLY the final caption text. Do not add any conversational responses, prefixes, or tags."
+                            )
+                            response = client.models.generate_content(
+                                model='gemini-2.5-flash',
+                                contents=[prompt, st.session_state.active_image]
+                            )
+                            st.session_state.generated_caption = response.text.strip()
+                            if st.session_state.generated_caption not in st.session_state.history:
+                                st.session_state.history.append(st.session_state.generated_caption)
+                        except Exception as e:
+                            st.error(f"Error calling Gemini API: {str(e)}")
+                            try:
+                                client_diag = genai.Client(api_key=api_key)
+                                models = [m.name for m in client_diag.models.list()]
+                                st.info(f"Available models for your API Key: {', '.join(models)}")
+                            except Exception as diag_err:
+                                st.warning(f"Could not list available models: {str(diag_err)}")
+                else:
+                    try:
+                        from tf_keras.preprocessing.image import img_to_array
+                        vgg_model, model, tokenizer = load_local_models()
+                        image_resized = ImageOps.fit(st.session_state.active_image, (224, 224), Image.LANCZOS)
+                        img_array = img_to_array(image_resized)
+                        raw_caption = gen_caption_image(img_array, vgg_model, model, tokenizer, max_length)
+                        genz_caption = translate_to_genz(raw_caption, intensity=intensity)
+                        st.session_state.generated_caption = genz_caption
+                        if st.session_state.generated_caption not in st.session_state.history:
+                            st.session_state.history.append(st.session_state.generated_caption)
+                    except Exception as e:
+                        st.error(f"Failed to load or execute local model: {str(e)}")
+        
+        if st.session_state.generated_caption:
+            st.info("💡 Click the copy icon on the top-right of the code block below to copy your caption!")
+            st.code(st.session_state.generated_caption, language=None)
+        else:
+            st.write("Click 'Generate GenZ Caption 🔥' to start cooking!")
