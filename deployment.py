@@ -202,8 +202,7 @@ def translate_to_genz(caption, intensity="Standard (Medium)"):
         result += " " + suffix
     return result
 
-# Streamlit UI
-st.title("Image to GenZ Caption Generator ⚡️")
+# Streamlit UI configuration and session states
 
 # Initialize session state variables
 if "generated_caption" not in st.session_state:
@@ -303,7 +302,7 @@ if st.session_state.active_image is not None:
                                 f"Make sure to output ONLY the final caption text. Do not add any conversational responses, prefixes, or tags."
                             )
                             response = client.models.generate_content(
-                                model='gemini-2.5-flash',
+                                model='gemini-3.6-flash',
                                 contents=[prompt, st.session_state.active_image]
                             )
                             st.session_state.generated_caption = response.text.strip()
@@ -332,7 +331,13 @@ if st.session_state.active_image is not None:
                         st.error(f"Failed to load or execute local model: {str(e)}")
         
         if st.session_state.generated_caption:
-            st.info("💡 Click the copy icon on the top-right of the code block below to copy your caption!")
-            st.code(st.session_state.generated_caption, language=None)
+            st.markdown(
+                f"""
+                <div style="background-color: #f0f4f8; color: #1e293b; padding: 18px; border-radius: 12px; border-left: 5px solid #3b82f6; font-size: 1.25rem; font-weight: 500; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.6; margin-top: 10px; margin-bottom: 12px;">
+                    {st.session_state.generated_caption}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
             st.write("Click 'Generate GenZ Caption 🔥' to start cooking!")
